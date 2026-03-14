@@ -115,7 +115,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({ 
-    status: "Telegram bot webhook is running",
-    message: "Send POST requests to this endpoint from Telegram"
+    status: "ok",
+    message: "TeleBot TechAge webhook is active",
+    timestamp: new Date().toISOString()
   })
 }
