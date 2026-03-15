@@ -93,16 +93,14 @@ export async function POST(request: NextRequest) {
     const userMessage = body.message.text
     const userName = body.message.from?.first_name || "User"
 
-    // Handle /start command
     if (userMessage === "/start") {
       await sendTelegramMessage(
         chatId,
-        `Hello ${userName}! 👋\n\nI'm your AI assistant powered by Gemini. Send me any message and I'll help you!\n\nYou can ask me:\n• Questions on any topic\n• Help with writing or coding\n• Creative ideas and suggestions\n• And much more!`
+        `Hello ${userName}!\n\nI'm your AI assistant powered by Gemini. Send me any message and I'll help you!\n\nYou can ask me:\n- Questions on any topic\n- Help with writing or coding\n- Creative ideas and suggestions\n- And much more!`
       )
       return NextResponse.json({ ok: true })
     }
 
-    // Get AI response
     const aiResponse = await getGeminiResponse(userMessage)
     await sendTelegramMessage(chatId, aiResponse)
 
@@ -116,7 +114,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({ 
     status: "ok",
-    message: "TeleBot TechAge webhook is active",
-    timestamp: new Date().toISOString()
+    message: "TeleBot TechAge is running",
+    version: "1.0.0"
   })
 }
