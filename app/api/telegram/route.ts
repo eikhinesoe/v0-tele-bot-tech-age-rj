@@ -33,10 +33,6 @@ async function sendTelegramMessage(chatId: number, text: string) {
 // ✅ GEMINI FUNCTION
 async function getGeminiResponse(prompt: string): Promise<string> {
   try {
-
-    // ✅ TEMP TEST
-    return "TEST NEW CODE"
-
     // 🔥 Gemini API request
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
