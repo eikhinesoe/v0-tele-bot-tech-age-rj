@@ -26,14 +26,18 @@ async function sendTelegramMessage(chatId: number, text: string) {
     body: JSON.stringify({
       chat_id: chatId,
       text,
-      parse_mode: "Markdown",
     }),
   })
 }
 
-// ✅ FIXED GEMINI FUNCTION
+// ✅ GEMINI FUNCTION
 async function getGeminiResponse(prompt: string): Promise<string> {
   try {
+
+    // ✅ TEMP TEST
+    return "TEST NEW CODE"
+
+    // 🔥 Gemini API request
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -44,27 +48,37 @@ async function getGeminiResponse(prompt: string): Promise<string> {
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: prompt }],
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
             },
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 1024,
+            maxOutputTokens: 300,
           },
         }),
       }
     )
 
-    // 🚨 HANDLE RATE LIMIT (429)
+    // 🚨 RATE LIMIT
     if (response.status === 429) {
-      console.warn("Gemini rate limit hit (429)")
-      return "⏳ I'm getting too many requests right now. Please try again in a moment."
+      return "⏳ Too many requests right now. Please try again later."
     }
 
-    // 🚨 OTHER ERRORS
+    // 🚨 DEBUGGING
     if (!response.ok) {
-      console.error("Gemini API error:", response.status)
-      return "⚠️ AI service is temporarily unavailable. Please try again later."
+      const errorText = await response.text()
+
+      console.error(
+        "Gemini API FULL ERROR:",
+        response.status,
+        errorText
+      )
+
+      return `⚠️ Gemini Error ${response.status}`
     }
 
     const data = await response.json()
@@ -73,27 +87,31 @@ async function getGeminiResponse(prompt: string): Promise<string> {
       data.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!text) {
-      return "⚠️ I couldn't generate a response. Please try again."
+      return "⚠️ No response generated."
     }
 
     return text
+
   } catch (error) {
     console.error("Gemini error:", error)
-    return "⚠️ Something went wrong while processing your request."
+
+    return "⚠️ Something went wrong."
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+
     if (!TELEGRAM_BOT_TOKEN || !GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "Missing API keys" },
+        { error: "Missing environment variables" },
         { status: 500 }
       )
     }
 
     const body: TelegramMessage = await request.json()
 
+    // Ignore non-text messages
     if (!body.message?.text || !body.message?.chat?.id) {
       return NextResponse.json({ ok: true })
     }
@@ -102,22 +120,27 @@ export async function POST(request: NextRequest) {
     const userMessage = body.message.text
     const userName = body.message.from?.first_name || "User"
 
-    // /start command
+    // ✅ START COMMAND
     if (userMessage === "/start") {
+
       await sendTelegramMessage(
         chatId,
         `Hello ${userName}!\n\nI'm your AI assistant powered by Gemini.`
       )
+
       return NextResponse.json({ ok: true })
     }
 
-    // 🔥 Gemini response
+    // 🔥 GET AI RESPONSE
     const aiResponse = await getGeminiResponse(userMessage)
 
+    // 📩 SEND TO TELEGRAM
     await sendTelegramMessage(chatId, aiResponse)
 
     return NextResponse.json({ ok: true })
+
   } catch (error) {
+
     console.error("Webhook error:", error)
 
     return NextResponse.json(
@@ -127,6 +150,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// ✅ HEALTH CHECK
 export async function GET() {
   return NextResponse.json({
     status: "ok",
