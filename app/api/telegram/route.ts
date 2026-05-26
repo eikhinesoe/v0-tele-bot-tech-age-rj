@@ -67,7 +67,17 @@ async function getAIResponse(prompt: string): Promise<string> {
           },
           body: JSON.stringify({
             model: model,
-            messages: [{ role: "user", content: prompt }],
+            messages: [
+  {
+    role: "system",
+    content:
+      "You are a friendly educational assistant for students. Explain everything in simple English with examples.",
+  },
+  {
+    role: "user",
+    content: prompt,
+  },
+],
             temperature: 0.7,
             max_tokens: 300,
           }),
