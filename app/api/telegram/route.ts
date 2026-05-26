@@ -71,7 +71,7 @@ async function getAIResponse(
 
           // ✅ FREE MODEL
           model:
-            "deepseek/deepseek-chat-v3-0324:free",
+            "meta-llama/llama-3-8b-instruct:free",
 
           messages: [
             {
