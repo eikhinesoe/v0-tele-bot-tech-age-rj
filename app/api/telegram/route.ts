@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 
+// ✅ ENV VARIABLES
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
 
+// ✅ TELEGRAM MESSAGE TYPE
 interface TelegramMessage {
   message?: {
     chat: {
@@ -15,8 +17,11 @@ interface TelegramMessage {
   }
 }
 
+// ✅ SEND MESSAGE TO TELEGRAM
 async function sendTelegramMessage(chatId: number, text: string) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
+
+  const url =
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
 
   await fetch(url, {
     method: "POST",
@@ -30,128 +35,180 @@ async function sendTelegramMessage(chatId: number, text: string) {
   })
 }
 
-// ✅ GEMINI FUNCTION
-async function getGeminiResponse(prompt: string): Promise<string> {
+// ✅ DEEPSEEK AI FUNCTION
+async function getAIResponse(prompt: string): Promise<string> {
+
   try {
-    console.log("🚀 START GEMINI REQUEST")
-    // 🔥 Gemini API request
+
+    console.log("🚀 Sending request to DeepSeek")
+
     const response = await fetch(
-     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      "https://api.deepseek.com/chat/completions",
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
+          "Authorization":
+            `Bearer ${DEEPSEEK_API_KEY}`,
         },
+
         body: JSON.stringify({
-          contents: [
+          model: "deepseek-chat",
+
+          messages: [
             {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
+              role: "user",
+              content: prompt,
             },
           ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 300,
-          },
+
+          temperature: 0.7,
+          max_tokens: 300,
         }),
       }
     )
 
-    // 🚨 RATE LIMIT
-    if (response.status === 429) {
-      return "⏳ Too many requests right now. Please try again later."
-    }
+    console.log("📡 DeepSeek Status:", response.status)
 
-    // 🚨 DEBUGGING
+    // ❌ HANDLE API ERROR
     if (!response.ok) {
+
       const errorText = await response.text()
 
       console.error(
-        "Gemini API FULL ERROR:",
+        "❌ DeepSeek FULL ERROR:",
         response.status,
         errorText
       )
 
-      return `⚠️ Gemini Error ${response.status}`
+      return `⚠️ DeepSeek Error ${response.status}`
     }
 
+    // ✅ PARSE RESPONSE
     const data = await response.json()
 
     const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text
+      data.choices?.[0]?.message?.content
 
     if (!text) {
-      return "⚠️ No response generated."
+      return "⚠️ No AI response generated."
     }
 
     return text
 
   } catch (error) {
-    console.error("Gemini error:", error)
+
+    console.error("❌ DeepSeek Error:", error)
 
     return "⚠️ Something went wrong."
   }
 }
 
+// ✅ TELEGRAM WEBHOOK
 export async function POST(request: NextRequest) {
+
   try {
 
-    if (!TELEGRAM_BOT_TOKEN || !GEMINI_API_KEY) {
+    console.log("🔥 NEW DEPLOYMENT ACTIVE")
+
+    // ❌ CHECK ENV VARIABLES
+    if (
+      !TELEGRAM_BOT_TOKEN ||
+      !DEEPSEEK_API_KEY
+    ) {
+
       return NextResponse.json(
-        { error: "Missing environment variables" },
-        { status: 500 }
+        {
+          error: "Missing environment variables",
+        },
+        {
+          status: 500,
+        }
       )
     }
 
-    const body: TelegramMessage = await request.json()
+    // ✅ GET TELEGRAM DATA
+    const body: TelegramMessage =
+      await request.json()
 
     // Ignore non-text messages
-    if (!body.message?.text || !body.message?.chat?.id) {
-      return NextResponse.json({ ok: true })
+    if (
+      !body.message?.text ||
+      !body.message?.chat?.id
+    ) {
+
+      return NextResponse.json({
+        ok: true,
+      })
     }
 
-    const chatId = body.message.chat.id
-    const userMessage = body.message.text
-    const userName = body.message.from?.first_name || "User"
+    const chatId =
+      body.message.chat.id
 
-    // ✅ START COMMAND
+    const userMessage =
+      body.message.text
+
+    const userName =
+      body.message.from?.first_name ||
+      "User"
+
+    // ✅ /start COMMAND
     if (userMessage === "/start") {
 
       await sendTelegramMessage(
         chatId,
-        `Hello ${userName}!\n\nI'm your AI assistant powered by Gemini.`
+
+        `Hello ${userName}!
+
+I'm your AI assistant powered by DeepSeek AI.
+
+Send me any message and I'll help you 🚀`
       )
 
-      return NextResponse.json({ ok: true })
+      return NextResponse.json({
+        ok: true,
+      })
     }
 
-    // 🔥 GET AI RESPONSE
-    const aiResponse = await getGeminiResponse(userMessage)
+    // ✅ GET AI RESPONSE
+    const aiResponse =
+      await getAIResponse(userMessage)
 
-    // 📩 SEND TO TELEGRAM
-    await sendTelegramMessage(chatId, aiResponse)
+    // ✅ SEND BACK TO TELEGRAM
+    await sendTelegramMessage(
+      chatId,
+      aiResponse
+    )
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({
+      ok: true,
+    })
 
   } catch (error) {
 
-    console.error("Webhook error:", error)
+    console.error(
+      "❌ Webhook Error:",
+      error
+    )
 
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      {
+        error: "Internal server error",
+      },
+      {
+        status: 500,
+      }
     )
   }
 }
 
 // ✅ HEALTH CHECK
 export async function GET() {
+
   return NextResponse.json({
     status: "ok",
-    message: "TeleBot TechAge is running",
-    version: "1.0.0",
+    message:
+      "Telegram DeepSeek Bot is running 🚀",
   })
 }
