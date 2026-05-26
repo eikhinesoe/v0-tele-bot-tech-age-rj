@@ -71,7 +71,7 @@ async function getAIResponse(
 
           // ✅ FREE MODEL
           model:
-            "meta-llama/llama-3.1-8b-instruct:free",
+            "deepseek/deepseek-v4-flash:free",
 
           messages: [
             {
