@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 // ✅ ENV VARIABLES
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 
 // ✅ TELEGRAM MESSAGE TYPE
 interface TelegramMessage {
@@ -18,16 +18,21 @@ interface TelegramMessage {
 }
 
 // ✅ SEND MESSAGE TO TELEGRAM
-async function sendTelegramMessage(chatId: number, text: string) {
+async function sendTelegramMessage(
+  chatId: number,
+  text: string
+) {
 
   const url =
     `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
 
   await fetch(url, {
     method: "POST",
+
     headers: {
       "Content-Type": "application/json",
     },
+
     body: JSON.stringify({
       chat_id: chatId,
       text,
@@ -35,26 +40,38 @@ async function sendTelegramMessage(chatId: number, text: string) {
   })
 }
 
-// ✅ DEEPSEEK AI FUNCTION
-async function getAIResponse(prompt: string): Promise<string> {
+// ✅ OPENROUTER AI FUNCTION
+async function getAIResponse(
+  prompt: string
+): Promise<string> {
 
   try {
 
-    console.log("🚀 Sending request to DeepSeek")
+    console.log("🚀 Sending request to OpenRouter")
 
     const response = await fetch(
-      "https://api.deepseek.com/chat/completions",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
 
         headers: {
           "Content-Type": "application/json",
+
           "Authorization":
-            `Bearer ${DEEPSEEK_API_KEY}`,
+            `Bearer ${OPENROUTER_API_KEY}`,
+
+          "HTTP-Referer":
+            "https://vercel.com",
+
+          "X-Title":
+            "Telegram AI Bot",
         },
 
         body: JSON.stringify({
-          model: "deepseek-chat",
+
+          // ✅ FREE MODEL
+          model:
+            "deepseek/deepseek-chat-v3-0324:free",
 
           messages: [
             {
@@ -69,20 +86,24 @@ async function getAIResponse(prompt: string): Promise<string> {
       }
     )
 
-    console.log("📡 DeepSeek Status:", response.status)
+    console.log(
+      "📡 OpenRouter Status:",
+      response.status
+    )
 
     // ❌ HANDLE API ERROR
     if (!response.ok) {
 
-      const errorText = await response.text()
+      const errorText =
+        await response.text()
 
       console.error(
-        "❌ DeepSeek FULL ERROR:",
+        "❌ OpenRouter FULL ERROR:",
         response.status,
         errorText
       )
 
-      return `⚠️ DeepSeek Error ${response.status}`
+      return `⚠️ OpenRouter Error ${response.status}`
     }
 
     // ✅ PARSE RESPONSE
@@ -99,28 +120,36 @@ async function getAIResponse(prompt: string): Promise<string> {
 
   } catch (error) {
 
-    console.error("❌ DeepSeek Error:", error)
+    console.error(
+      "❌ OpenRouter Error:",
+      error
+    )
 
     return "⚠️ Something went wrong."
   }
 }
 
 // ✅ TELEGRAM WEBHOOK
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest
+) {
 
   try {
 
-    console.log("🔥 NEW DEPLOYMENT ACTIVE")
+    console.log(
+      "🔥 OPENROUTER DEPLOYMENT ACTIVE"
+    )
 
     // ❌ CHECK ENV VARIABLES
     if (
       !TELEGRAM_BOT_TOKEN ||
-      !DEEPSEEK_API_KEY
+      !OPENROUTER_API_KEY
     ) {
 
       return NextResponse.json(
         {
-          error: "Missing environment variables",
+          error:
+            "Missing environment variables",
         },
         {
           status: 500,
@@ -153,7 +182,7 @@ export async function POST(request: NextRequest) {
       body.message.from?.first_name ||
       "User"
 
-    // ✅ /start COMMAND
+    // ✅ START COMMAND
     if (userMessage === "/start") {
 
       await sendTelegramMessage(
@@ -161,9 +190,9 @@ export async function POST(request: NextRequest) {
 
         `Hello ${userName}!
 
-I'm your AI assistant powered by DeepSeek AI.
+I'm your AI assistant powered by OpenRouter AI 🚀
 
-Send me any message and I'll help you 🚀`
+Send me any message and I'll help you.`
       )
 
       return NextResponse.json({
@@ -175,7 +204,7 @@ Send me any message and I'll help you 🚀`
     const aiResponse =
       await getAIResponse(userMessage)
 
-    // ✅ SEND BACK TO TELEGRAM
+    // ✅ SEND TO TELEGRAM
     await sendTelegramMessage(
       chatId,
       aiResponse
@@ -194,7 +223,8 @@ Send me any message and I'll help you 🚀`
 
     return NextResponse.json(
       {
-        error: "Internal server error",
+        error:
+          "Internal server error",
       },
       {
         status: 500,
@@ -209,6 +239,6 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     message:
-      "Telegram DeepSeek Bot is running 🚀",
+      "Telegram OpenRouter Bot is running 🚀",
   })
 }
