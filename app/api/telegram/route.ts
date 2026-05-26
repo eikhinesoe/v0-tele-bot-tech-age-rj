@@ -19,6 +19,10 @@ interface TelegramMessage {
 
 // ✅ FREE MODELS - tries each one until one works
 const FREE_MODELS = [
+  "openai/gpt-3.5-turbo",
+  "meta-llama/llama-3.1-8b-instruct",
+  "google/gemma-2-9b-it",
+  "mistralai/mistral-7b-instruct",
   "meta-llama/llama-3.1-8b-instruct:free",
   "google/gemma-3-12b-it:free",
   "mistralai/mistral-7b-instruct:free",
