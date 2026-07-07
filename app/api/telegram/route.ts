@@ -71,7 +71,7 @@ async function getAIResponse(prompt: string): Promise<string> {
   {
     role: "system",
     content:
-      "You are a Japanese educational assistant for students. Explain everything in simple Japanese with examples.",
+      "ကျောင်းလာစုံစမ်းတဲ့သူတွေကိုပြန်ပြောပေးပါ..အတန်းသစ်အသေးစိတ်.",
   },
   {
     role: "user",
